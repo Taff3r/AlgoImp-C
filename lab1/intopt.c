@@ -1,23 +1,18 @@
 #include <stdio.h>
+#include "simplex.h"
 int main(){
     // 1
+    simplex_t* simp = malloc(sizeof(simplex_t));
     printf("hello world!\n");
     FILE* fp;
     fp = fopen("constraints", "r");
-    int m, n;
-    fscanf(fp, "%d %d", &m,&n);
-    int c[n];
-    int a[m][n];
-    int b[m][n];
-    printf("m = %d, n = %d\n", m,n);
-    for(int i = 0; i != n; ++i)
-        fscanf(fp, "%d", &(c[i]));
-    for(int i = 0; i != n; ++i)
-        fscanf(fp, "%d", &(a[0][i]));
-
-    printf("c\n");
-    for(int i = 0; i != n; ++i){
-        printf("%d ", c[i]);
+    int m,n;
+    fscanf(fp, "%d %d", &m, &n);
+    int a[] = {1,2,3,4};
+    init_simplex_t(simp, m, n, a);
+    printf("%d %d", simp->m, simp->n);
+    for (int k = 0; k != m + n; ++k){
+        printf(" %d", simp->var[k]);
     }
     fclose(fp);
 }
