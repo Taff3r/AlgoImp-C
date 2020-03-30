@@ -6,13 +6,26 @@ int main(){
     printf("hello world!\n");
     FILE* fp;
     fp = fopen("constraints", "r");
+    // Scan m && n
     int m,n;
     fscanf(fp, "%d %d", &m, &n);
-    int a[] = {1,2,3,4};
-    init_simplex_t(simp, m, n, a);
-    printf("%d %d", simp->m, simp->n);
-    for (int k = 0; k != m + n; ++k){
-        printf(" %d", simp->var[k]);
-    }
+    init_simplex_t(simp, m, n);
+    // Scan c
+    for (int i = 0; i != n; ++i)
+        fscanf(fp, "%lf", &simp->c[i]);
+
+    // Scan a
+    for (int i = 0; i != m; ++i)
+        for (int k = 0; k != n; ++k)
+            fscanf(fp, "%lf", &simp->a[i][k]);
+    // Scan b
+    for (int i = 0; i != n; ++i)
+        fscanf(fp, "%lf", &simp->b[i]);
+
+    printSimplex(simp);
     fclose(fp);
+    delete_simp(simp);
 }
+
+
+        
