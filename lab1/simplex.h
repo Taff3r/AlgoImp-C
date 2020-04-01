@@ -17,7 +17,7 @@ void init_simplex_t(simplex_t* s, int  m, int n){
     // alloc
     s->var = (int*) calloc(sizeof(int) * (n + m), 0); // var are zeroes
     s->b   = (double*) malloc(sizeof(double) * (m));
-    s->c   = (double*) malloc(sizeof(double) * (n));
+    s->c   = (double*) malloc(sizeof(double) * (n - 1));
     s->x   = (double*) calloc(sizeof(double) * (n + 1), 0.0); // x are zeroes
     s->a   = (double**) malloc(sizeof(double*) * m);
     for(int i = 0; i != m; ++i)
@@ -51,5 +51,21 @@ void printSimplex(simplex_t* simp){
 }
 
 void printConstraints(simplex_t* simp) {
-
+	printf("max z = ");
+	for (int i = 0; i != simp->n; ++i){
+		printf("%+fx%d", simp->c[i], i);
+		if ( i + 1 != simp->n){
+			printf(" + ");
+		}			
+	}
+	printf("\n");
+	for (int i = 0; i != simp->m; ++i){
+		for(int k = 0; k != simp->n; ++k){
+			printf("%+fx%d", simp->a[i][k], k);
+			if ( k + 1 != simp->n){
+				printf(" + ");
+			}
+		}	
+		printf(" \u2264 %f\n", simp->b[i]);
+	}
 }

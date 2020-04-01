@@ -3,7 +3,6 @@
 int main(){
     // 1
     simplex_t* simp = malloc(sizeof(simplex_t));
-    printf("hello world!\n");
     FILE* fp;
     fp = fopen("constraints", "r");
     // Scan m && n
@@ -22,8 +21,9 @@ int main(){
     for (int i = 0; i != n; ++i)
         fscanf(fp, "%lf", &simp->b[i]);
 
-    printSimplex(simp);
+    //printSimplex(simp);
     fclose(fp);
+	printConstraints(simp);
     delete_simp(simp);
 }
 
