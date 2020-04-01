@@ -49,3 +49,7 @@ void printSimplex(simplex_t* simp){
         printf("%lf ", simp->b[i]);
     printf("\n");
 }
+
+void printConstraints(simplex_t* simp) {
+
+}
