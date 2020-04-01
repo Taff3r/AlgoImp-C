@@ -17,7 +17,7 @@ void init_simplex_t(simplex_t* s, int  m, int n){
     // alloc
     s->var = (int*) calloc(sizeof(int) * (n + m), 0); // var are zeroes
     s->b   = (double*) malloc(sizeof(double) * (m));
-    s->c   = (double*) malloc(sizeof(double) * (n - 1));
+    s->c   = (double*) malloc(sizeof(double) * (n));
     s->x   = (double*) calloc(sizeof(double) * (n + 1), 0.0); // x are zeroes
     s->a   = (double**) malloc(sizeof(double*) * m);
     for(int i = 0; i != m; ++i)
