@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "simplex.h"
 #include "intopt.h"
 #include "math.h"
@@ -10,7 +11,6 @@ int main(){
     // Scan m && n
     int m,n;
     fscanf(fp, "%d %d", &m, &n);
-
     // Scan c
     double* c; 
     c = (double*) malloc(sizeof(double) * (n));
@@ -25,12 +25,12 @@ int main(){
     for (int i = 0; i != m; ++i)
         for (int k = 0; k != n; ++k)
             fscanf(fp, "%lf", &a[i][k]);
-
+    
     double* b = (double*) malloc(sizeof(double) * (m));
     // Scan b
-    for (int i = 0; i != n; ++i)
+    for (int i = 0; i != m; ++i)
         fscanf(fp, "%lf", &b[i]);
-
+    
     int* var  = (int*) calloc(n + m, sizeof(int)); // var are zeroes
     double* x = (double*) calloc(n + 1, sizeof(double)); // x are zeroes
     double y = 0;
@@ -58,10 +58,10 @@ int init(simplex_t* s, int m, int n, double** a, double* b, double* c, double* x
     for (int l = 0; l != m; ++l)
         for (int p = 0; p != n; ++p)
             s->a[l][p] = a[l][p];
-    // Assign b
-    for (int l = 0; l != n; ++l)
+    // Assign b m or n?
+    for (int l = 0; l != m; ++l)
         s->b[l] = b[l];
-
+    
     for (i = 0; i < m+ n; ++i)
         s->var[i] = i;
 
@@ -132,24 +132,103 @@ void pivot(simplex_t* s, int row, int col){
     b[row] = b[row] / a[row][col];
     a[row][col] = 1 / a[row][col]; 
 }
-
+void prepare(simplex_t* s, int k) {
+    printf("In prepare");
+    int m = s->m;
+    int n = s->n;
+    for (int i = m + n; i > n; --i){
+        s->var[i] = s->var[i - 1];
+    }
+    s->var[n] = m + n;
+    ++n;
+    for (int i = 0; i < m; i++){
+        s->a[i][n - 1] = -1;
+    }
+    // Maybe do frees here?
+    s->x = calloc(m +n, sizeof(double));
+    s->c = calloc(n, sizeof(double));
+    s->c[n - 1] = -1;
+    s->n = n;
+    pivot(s, k, n - 1);
+}
 int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double* x , double y, int* var) {
     int i,j,k;
     double w;
     k = init(s, m, n, a, b, c, x, y, var);
-    return 1;
-    /*
-       if (b[k] >= 0) {
+    printConstraints(s);
+    if (b[k] >= 0)
+        return 1;
 
-       }
-       */
+    prepare(s,k);
+    n = s->n;
+    s->y = xsimplex(m,n, s->a, s->b, s->c, s->x, 0, s->var, 1);
+    for(i = 0; i < s->m + s->n; ++i) {
+        if (s->var[i] == m + n - 1) {
+            if (fabs(s->x[i]) > EPSILON) {
+                printf("Original system is infeasible\n");
+                return 0;
+            } else 
+                break;
+        }
+    }
+    if (i >= n) {
+        for (j = k = 0; k < n; ++k){
+            if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j]))
+                j = k;
+        }
+        pivot(s, i-n, j);
+        i = j;
+    }
+
+    if (i < n - 1) {
+        for (j = k; k < n; ++k){
+            k = s->var[i]; s->var[i] = s->var[n - 1]; s->var[n - 1] = k;
+            for (k = 0;  k < m; ++k){
+                w = s->a[k][n-1]; s->a[k][n -1] = s->a[k][i]; s->a[k][i] = w;
+            }
+        }
+    } else {
+        // x[n][m]  is nonbasic and last, forget it.
+    }
+    free(s->c);
+    // Realloc?
+    s->c = c;
+    s->y = y;
+    for (k = n -1; k < n + m - 1; ++k)
+        s->var[k] = s->var[k + 1];
+    n = s->n = s->n - 1;
+    // nedd malloc?
+    double* t = calloc (n, sizeof(double));
+    for (k = 0; k < n; ++k){
+        for (j = 0; j < n; ++j){
+            if (k == s->var[j]){
+                t[j] = t[j] + s->c[k];
+                goto next_k;
+            }
+        }
+
+        for (j = 0; j < m; ++j){
+            if (s->var[n +j] == k)
+                break;
+        }
+        s->y = s->y + s->c[k] * s->b[j];
+        for (i = 0; i < n; ++i)
+            t[i] = t[i] - s->c[k] * s->a[j][i];
+        next_k:;
+    }
+
+    for (i = 0;  i < n; ++i)
+        s->c[i] = t[i];
+    free(t);
+    free(s->x);
+    return 1;
 }
 
 double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h){
     simplex_t* s = malloc(sizeof(simplex_t));
     // No c in initial?
     if (!initial(s, m, n, a, b, c, x, y, var)) {
-        delete_simp(s);
+        free(s->var);
         return NAN; 
     }
     int row, col;
@@ -188,7 +267,6 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
     }
     double ret = s->y;
-    delete_simp(s);
     return ret;
 }
 double simplex(int m, int n, double** a, double* b, double* c, double* x, double y) {
