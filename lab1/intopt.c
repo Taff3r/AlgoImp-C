@@ -163,7 +163,7 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
     n = s->n;
     s->y = xsimplex(m,n, s->a, s->b, s->c, s->x, 0, s->var, 1);
     for(i = 0; i < s->m + s->n; ++i) {
-        if (s->var[i] == m + n - 1) {
+        if (s->var[i] == m + n - 1) {  // CHANGED HERE
             if (fabs(s->x[i]) > EPSILON) {
                 printf("Original system is infeasible\n");
                 return 0;
@@ -173,8 +173,9 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
     }
     if (i >= n) {
         for (j = k = 0; k < n; ++k){
-            if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j]))
+            if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])){
                 j = k;
+            }
         }
         pivot(s, i-n, j);
         i = j;
@@ -206,7 +207,6 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
                 goto next_k;
             }
         }
-
         for (j = 0; j < m; ++j){
             if (s->var[n +j] == k)
                 break;
@@ -226,7 +226,6 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
 
 double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h){
     simplex_t* s = malloc(sizeof(simplex_t));
-    // No c in initial?
     if (!initial(s, m, n, a, b, c, x, y, var)) {
         free(s->var);
         return NAN; 
