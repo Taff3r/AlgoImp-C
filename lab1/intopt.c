@@ -64,7 +64,12 @@ int init(simplex_t* s, int m, int n, double** a, double* b, double* c, double* x
     
     for (i = 0; i < m+ n; ++i)
         s->var[i] = i;
-
+    if (s->var == NULL){
+        s->var = calloc(m + n + 1, sizeof(int));
+        for (i = 0; i < m + n; ++i){
+            s->var[i] = i;
+        }
+    }
     for (k = 0, i = 1; i < m; ++i){
         if (b[i] < b[k])
             k = i;
@@ -139,13 +144,14 @@ void prepare(simplex_t* s, int k) {
     for (int i = m + n; i > n; --i){
         s->var[i] = s->var[i - 1];
     }
+    // add x[m+n] to each constraints
     s->var[n] = m + n;
     ++n;
-    for (int i = 0; i < m; i++){
+    for (int i = 0; i < m; ++i) {
         s->a[i][n - 1] = -1;
     }
     // Maybe do frees here?
-    s->x = calloc(m +n, sizeof(double));
+    s->x = calloc(m + n, sizeof(double));
     s->c = calloc(n, sizeof(double));
     s->c[n - 1] = -1;
     s->n = n;
@@ -156,21 +162,26 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
     double w;
     k = init(s, m, n, a, b, c, x, y, var);
     printConstraints(s);
-    if (b[k] >= 0)
+    if (b[k] >= 0) {
         return 1;
-
+    }
     prepare(s,k);
     n = s->n;
-    s->y = xsimplex(m,n, s->a, s->b, s->c, s->x, 0, s->var, 1);
+    s->y = xsimplex(m, n, s->a, s->b, s->c, s->x, 0, s->var, 1);
+    printf("s->y == %lf\n", s->y);
     for(i = 0; i < s->m + s->n; ++i) {
         if (s->var[i] == m + n - 1) {  // CHANGED HERE
             if (fabs(s->x[i]) > EPSILON) {
                 printf("Original system is infeasible\n");
+                free(s->x);
+                free(s->c);
                 return 0;
             } else 
                 break;
         }
     }
+    printf("feasible. \n");
+    printConstraints(s);
     if (i >= n) {
         for (j = k = 0; k < n; ++k){
             if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])){
@@ -183,9 +194,13 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
 
     if (i < n - 1) {
         for (j = k; k < n; ++k){
-            k = s->var[i]; s->var[i] = s->var[n - 1]; s->var[n - 1] = k;
+            k = s->var[i];
+            s->var[i] = s->var[n - 1];
+            s->var[n - 1] = k;
             for (k = 0;  k < m; ++k){
-                w = s->a[k][n-1]; s->a[k][n -1] = s->a[k][i]; s->a[k][i] = w;
+                w = s->a[k][n-1];
+                s->a[k][n -1] = s->a[k][i];
+                s->a[k][i] = w;
             }
         }
     } else {
@@ -195,8 +210,9 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
     // Realloc?
     s->c = c;
     s->y = y;
-    for (k = n -1; k < n + m - 1; ++k)
+    for (k = n -1; k < n + m - 1; ++k){
         s->var[k] = s->var[k + 1];
+    }
     n = s->n = s->n - 1;
     // nedd malloc?
     double* t = calloc (n, sizeof(double));
@@ -208,12 +224,13 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
             }
         }
         for (j = 0; j < m; ++j){
-            if (s->var[n +j] == k)
+            if (s->var[n + j] == k)
                 break;
         }
         s->y = s->y + s->c[k] * s->b[j];
-        for (i = 0; i < n; ++i)
+        for (i = 0; i < n; ++i){
             t[i] = t[i] - s->c[k] * s->a[j][i];
+        }
         next_k:;
     }
 
@@ -225,6 +242,7 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
 }
 
 double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h){
+    printf("xsimplex\n");
     simplex_t* s = malloc(sizeof(simplex_t));
     if (!initial(s, m, n, a, b, c, x, y, var)) {
         free(s->var);
@@ -246,6 +264,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
     }
 
     if (h == 0) {
+        printf("h == 0 \n");
         for (int i = 0; i < n; ++i){
             if (s->var[i] < n){
                 x[s->var[i]] = 0;
@@ -265,8 +284,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
             x[s->var[i]] = s->b[i - n];
         }
     }
-    double ret = s->y;
-    return ret;
+    return s->y;
 }
 double simplex(int m, int n, double** a, double* b, double* c, double* x, double y) {
     return xsimplex(m, n, a, b, c, x, y, NULL, 0);
