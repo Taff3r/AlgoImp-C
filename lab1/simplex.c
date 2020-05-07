@@ -4,9 +4,9 @@ void init_simplex_t(simplex_t* s, int  m, int n){
     s->m   = m;
     s->n   = n;
     // alloc
-    s->var = (int*) calloc((n + m), sizeof(int)); // var are zeroes
-    s->b   = (double*) malloc(sizeof(double) * (m));
-    s->c   = (double*) malloc(sizeof(double) * (n));
+    s->var = (int*) calloc((n + m + 1), sizeof(int)); // var are zeroes
+    s->b   = (double*) calloc(m, sizeof(double));
+    s->c   = (double*) calloc(n, sizeof(double)); 
     s->x   = (double*) calloc((n + 1), sizeof(double)); // x are zeroes
     s->a   = (double**) calloc(m , sizeof(double*));
     for(int i = 0; i != m; ++i){
