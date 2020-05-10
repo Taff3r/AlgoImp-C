@@ -1,6 +1,5 @@
 #ifndef SIMPLEX_H
 #define SIMPLEX_H
-#define EPSILON (0.00000001)
 
 typedef struct simplex_t simplex_t;
 struct simplex_t {
@@ -13,6 +12,8 @@ struct simplex_t {
     double*  c;     // c [n]
     double   y;     // y // result
 };
+
+const double EPSILON = 0.000001;
 
 void printConstraints(simplex_t*);
 
@@ -28,4 +29,5 @@ int init(simplex_t* s, int m, int n, double** a, double* b, double* c, double* x
 
 int select_nonbasic(simplex_t* s);
 
+void prepare(simplex_t* s, int k);
 #endif
