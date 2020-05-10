@@ -9,7 +9,7 @@ int main() {
 
     // Allocate
     double*  c = calloc(n, sizeof(double));
-    double** a = calloc(m, sizeof(double*));
+    double** a = malloc(m * sizeof(double*));
     double*  b = calloc(m, sizeof(double));
     double*  x = calloc(n + 1, sizeof(double));;
 
@@ -32,9 +32,10 @@ int main() {
     int y = 0;
     double sol = simplex(m, n, a, b, c, x, y);
     printf("%lf", sol);
+
     // Free 
     free(c);
-    for(i = 0; i < n; ++i)
+    for(i = 0; i < m; ++i)
         free(a[i]);
     free(a);
     free(b);
@@ -69,9 +70,9 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
     simplex_t* s = malloc(sizeof(simplex_t));
     if(!initial(s, m, n, a, b, c, x, y, var)) {
         free(s->var);
+        free(s);
         return NAN;
     }
-    printConstraints(s);
     int row, col, i;
     while((col = select_nonbasic(s)) >= 0){
         row = -1;
@@ -82,6 +83,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
         if (row < 0) {
             free(s->var);
+            free(s);
             return INFINITY;
         }
         pivot(s, row, col);
@@ -94,7 +96,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
             }
         }
 
-        for (i = 0; i < m; ++i) {
+        for (i = 0; i < m; i += 1) {
             if (s->var[n + 1] < n){
                 x[s->var[n + i]] = s->b[i];
             }
@@ -206,9 +208,104 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
     int i,j,k;
     double w;
     k = init(s, m, n, a, b, c, x, y, var);
+    printConstraints(s);
     if (b[k] >= 0) {
         return 1;
     }
+    prepare(s,k);
+    n = s->n;
+    s->y = xsimplex(m, n, s->a, s->b, s->c, s->x, 0, s->var, 1);
+    
+    // Using Skeppstedt's loop
+    for (i = 0; i < s->m + s->n; i += 1) {
+        if (s->var[i] == m + n - 1) {
+            if (fabs(s->x[i]) > EPSILON) {
+                free(s->x);
+                free(s->c);
+                return 0; // Infeasible
+            } else {
+                break;
+            }
+        } 
+        printf("i = %d, m = %d, n = %d k = %d\n", i, m, n, k);
+    }
 
-    return 0;
+    if (i >= n) {
+        for(j = k = 0; k < n; k += 1) {
+            printf("i = %d, s->n = %d, n = %d, s->m = %d, m = %d, k = %d, j = %d \n", i, s->n, n, s->m, m, k, j);
+            if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])) {
+                j = k;
+            }
+        }
+        pivot(s, i - n, j);
+        i = j;
+    }
+
+    if (i < n - 1) {
+        k = s->var[i];
+        s->var[i] = s->var[n - 1];
+        s->var[n - 1] = k;
+        for (k = 0; k < m; ++k) {
+            w = s->a[k][n - 1];
+            s->a[k][n - 1] = s->a[k][i];
+            s->a[k][i] = w;
+        }
+    } else {
+        // x_n+m is nonbasic and last. Forget it.
+    }
+
+    free(s->c);
+    s->c = c;
+    s->y = y;
+    for (k = n - 1; k < n + m - 1; ++k) {
+        s->var[k] = s->var[k + 1];
+    }
+    n = s->n = s->n - 1;
+    double* t = calloc(n, sizeof(double));
+    for (k = 0; k < n; ++k) {
+        for (j = 0; j < n; ++j) {
+            if (k == s->var[j]) {
+               t[j] += s->c[k];
+               goto next_k;
+            }
+        }
+
+        for (j = 0; j < m; ++j) {
+            if (s->var[n + j] == k) {
+                break;
+            }
+            s->y = s->y + s->c[k] * s->b[j];
+        }
+
+        for (i = 0; i < n; ++i) {
+            t[i] = t[i] - s->c[k] * s->a[j][i];
+        }
+        next_k:;
+    }
+
+    for(i = 0; i < n; ++i) {
+        s->c[i] = t[i];
+    }
+    free(t);
+    free(s->x);
+    return 1;
+}
+
+void prepare(simplex_t* s, int k) {
+    int m = s->m;
+    int n = s->n;
+    int i;
+    for(i = m + n; i > n; --i) {
+        s->var[i] = s->var[i - 1];
+    }
+    s->var[n] = m + n;
+    n = n + 1;
+    for (i = 0; i < m; ++i){
+        s->a[i][n - 1] = -1;
+    }
+    s->x = calloc(m + n, sizeof(double));
+    s->c = calloc(n, sizeof(double));
+    s->c[n - 1] = -1;
+    s->n = n;
+    pivot (s,k, n-1);
 }
