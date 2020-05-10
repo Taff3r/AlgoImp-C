@@ -13,7 +13,7 @@ struct simplex_t {
     double   y;     // y // result
 };
 
-const double EPSILON = 0.000001;
+double EPSILON = 0.0000000001;
 
 void printConstraints(simplex_t*);
 

@@ -6,7 +6,7 @@
 int main() {
     int m, n;
     fscanf(stdin, "%d%d", &m, &n);
-    printf("%lf", EPSILON);
+    printf("%.*e", EPSILON);
     // Allocate
     double*  c = calloc(n, sizeof(double));
     double** a = malloc((m + 1) * sizeof(double*));
