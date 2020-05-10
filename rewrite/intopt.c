@@ -6,10 +6,10 @@
 int main() {
     int m, n;
     fscanf(stdin, "%d%d", &m, &n);
-
+    printf("%lf", EPSILON);
     // Allocate
     double*  c = calloc(n, sizeof(double));
-    double** a = malloc(m * sizeof(double*));
+    double** a = malloc((m + 1) * sizeof(double*));
     double*  b = calloc(m, sizeof(double));
     double*  x = calloc(n + 1, sizeof(double));;
 
@@ -155,10 +155,10 @@ int select_nonbasic(simplex_t* s) {
 
 void pivot(simplex_t* s, int row, int col) {
     // Why auto?
-    double** a = s->a;
-    double*  b = s->b;
-    double*  c = s->c;
-    int      m = s->m;
+    auto double** a = s->a;
+    auto double*  b = s->b;
+    auto double*  c = s->c;
+    auto int      m = s->m;
     int      n = s->n;
     int      i,j,t;
 
@@ -274,15 +274,15 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
             if (s->var[n + j] == k) {
                 break;
             }
-            s->y = s->y + s->c[k] * s->b[j];
         }
 
+        s->y = s->y + s->c[k] * s->b[j];
         for (i = 0; i < n; ++i) {
             t[i] = t[i] - s->c[k] * s->a[j][i];
         }
         next_k:;
     }
-
+    // Why not just copy contents?
     for(i = 0; i < n; ++i) {
         s->c[i] = t[i];
     }
@@ -309,3 +309,5 @@ void prepare(simplex_t* s, int k) {
     s->n = n;
     pivot (s,k, n-1);
 }
+
+
