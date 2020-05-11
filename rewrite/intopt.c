@@ -9,7 +9,7 @@ int main() {
     printf("%.*e", EPSILON);
     // Allocate
     double*  c = calloc(n, sizeof(double));
-    double** a = malloc((m + 1) * sizeof(double*));
+    double** a = malloc(m * sizeof(double*));
     double*  b = calloc(m, sizeof(double));
     double*  x = calloc(n + 1, sizeof(double));;
 
@@ -105,11 +105,11 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         free(s->var);
     } else {
         for (i = 0; i < n; ++i) {
-            x[s->var[i]] = 0;
+            x[i] = 0;
         }
 
         for (i = n; i < n + m; ++i){
-            x[s->var[i]] = s->b[i - n];
+            x[i] = s->b[i - n];
         }
     }
     double ret = s->y;
@@ -227,12 +227,10 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
                 break;
             }
         } 
-        printf("i = %d, m = %d, n = %d k = %d\n", i, m, n, k);
     }
 
     if (i >= n) {
         for(j = k = 0; k < n; k += 1) {
-            printf("i = %d, s->n = %d, n = %d, s->m = %d, m = %d, k = %d, j = %d \n", i, s->n, n, s->m, m, k, j);
             if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])) {
                 j = k;
             }
