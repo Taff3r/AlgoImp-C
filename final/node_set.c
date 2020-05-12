@@ -1,8 +1,5 @@
 #include "node_set.h"
 #include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-
 NodeSet* initNodeSet() {
     NodeSet* set = malloc(sizeof(NodeSet));
     set->size = 0;
@@ -25,8 +22,7 @@ SetNode* initSetNode() {
     r->next = NULL;
     return r;
 }
-// TODO Check for duplicates
-// Use Floyds Turtle & Hare to find dups?
+
 void put(NodeSet* set, node_t* nt) {
     SetNode* s = initSetNode();
     // List is empty
@@ -68,23 +64,4 @@ void deleteNodeSet(NodeSet* set) {
         set->head = tmp;
     }
     free(set);
-}
-
-int main() {
-    NodeSet* set = initNodeSet();
-    assert(isEmpty(set) == 1);
-    printf("%ld\n", sizeof(node_t));
-    node_t* n = malloc(sizeof(node_t));
-    put(set, n);
-    assert(isEmpty(set) == 0);
-    assert(isEmpty(set) != 1);
-    assert(set->size == 1);
-    node_t* n1 = malloc(sizeof(node_t));
-    put(set, n1);
-    assert(set->size == 2);
-    assert(isEmpty(set) == 0);
-    put(set, n1);
-    assert(set->size == 2);
-    printf("Tests passed\n");
-    deleteNodeSet(set);
 }
