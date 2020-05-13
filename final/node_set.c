@@ -16,6 +16,7 @@ void deleteSetNode(SetNode* n) {
     free(n->e);
     free(n);
 }
+
 SetNode* initSetNode() {
     SetNode* r = malloc(sizeof(SetNode));
     r->e = NULL;
@@ -23,7 +24,7 @@ SetNode* initSetNode() {
     return r;
 }
 
-void put(NodeSet* set, node_t* nt) {
+int put(NodeSet* set, node_t* nt) {
     SetNode* s = initSetNode();
     // List is empty
     if (set->head == NULL) {
@@ -33,10 +34,10 @@ void put(NodeSet* set, node_t* nt) {
         SetNode* tmp = set->head;
         while(tmp != NULL) {
             // Duplicate found
-            if(tmp->e == nt){
+            if(tmp->e == nt || tmp->e->z == nt->z){
                 // Delete s and return
                 free(s);
-                return;
+                return 0;
             }
             // Move forward in list
             tmp = tmp->next;
@@ -46,6 +47,7 @@ void put(NodeSet* set, node_t* nt) {
     }
     s->e = nt;
     ++(set->size);
+    return 1;
 }
 
 node_t* get(NodeSet* set) {

@@ -20,9 +20,10 @@ void deleteSetNode(SetNode*);
 NodeSet* initNodeSet();
 
 SetNode* initSetNode();
+
 void deleteNodeSet(NodeSet*);
 
-void put(NodeSet*,node_t*);
+int put(NodeSet*,node_t*);
 
 node_t* get(NodeSet*);
 
