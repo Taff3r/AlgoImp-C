@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "simplex.h"
+#include "node_set.h"
 #include "bnb.h"
 
 int main() {
@@ -30,8 +32,8 @@ int main() {
         fscanf(stdin, "%lf", &b[i]);
 
     // Solve    
-    int y = 0;
-    double sol = simplex(m, n, a, b, c, x, y);
+    //    int y = 0;
+    double sol = intopt(m, n, a, b, c, x);
     printf("%lf", sol);
 
     // Free 
@@ -312,8 +314,8 @@ void prepare(simplex_t* s, int k) {
 node_t* initial_node(int m, int n, double** a, double* b, double* c) {
     node_t* p = malloc(sizeof(node_t));
 
-    p->a = malloc((m+1) * sizeof(double*));
     int i;
+    p->a = malloc((m+1) * sizeof(double*));
     for(i = 0; i < m + 1; ++i) {
         p->a[i] = calloc(n+1, sizeof(double));
     }
@@ -325,9 +327,14 @@ node_t* initial_node(int m, int n, double** a, double* b, double* c) {
     p->max = calloc(n, sizeof(double));
 
     // Double check
+    // memcpy(p->a, a, sizeof(double*));
     p->a = a;
     p->b = b;
     p->c = c;
+
+    // NOTE NOT IN PSEUDOCODE
+    p->m = m; 
+    p->n = n; 
 
     for(i = 0; i < n; ++i) {
         p->min[i] = -INFINITY;
@@ -343,7 +350,7 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
     q->k = k;
     q->ak = ak;
     q->bk = bk;
-    if (ak > 0 && p->max[k] < 0) {
+    if (ak > 0 && p->max[k] < INFINITY) {
         q->m = p->m;
     } else if(ak < 0 && p->min[k] > 0) {
         q->m = p->m;
@@ -421,19 +428,37 @@ int integer(node_t* p) {
     return 1;
 }
 
-void bound(node_t* p, int h, double* zp, double* x) {
+void bound(node_t* p, NodeSet* h, double* zp, double* x) {
     if (p->z > *zp) {
         *zp = p->z;
-        // copy each element of p->x to x // save best x
-        // remove and delete all nodes in q in h with q->z < p->z
+        // double check copy each element of p->x to x // save best x
         *x = *p->x;
+        // remove and delete all nodes in q in h with q->z < p->z
+        while(!isEmpty(h)){
+            node_t* q = get(h);
+            if(q->z < p->z ){
+                // ADDED MORE FREES HERE
+                free(q->min);
+                free(q->max);
+                for(int i = 0; i < q->m + 1; ++i){
+                    free(q->a[i]);
+                }
+                free(q->a);
+                free(q->b);
+                free(q->x);
+                free(q->c);
+                free(q);
+            } else {
+                put(h, q);
+            }
+        }
     }
 }
 
 double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     node_t* p = initial_node(m, n, a, b, c);
-    int h;
-    //set h = {p};
+    NodeSet* h = initNodeSet();
+    put(h,p);
     double z = -INFINITY;
     p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0); // q->x???
 
@@ -442,17 +467,26 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         if(integer(p)){
             *x = *p->x;
         }
-        free(p); // free pointers in p aswell?
+        free(p->max);
+        free(p->min);
+        free(p->x);
+        deleteNodeSet(h);
         return z;
     }
 
     branch(p, z);
-    while(!setisempty()) {
+    while(!isEmpty(h)) {
+        printf("In isEmpty loop\n");
         // take p from h TODO
-        succ(p, h, m, n, a, b, c, p->h, 1, floor(x[h]), &z, x);
-        succ(p, h, m, n, a, b, c, p->h, -1, -ceil(x[h]), &z, x);
+        p = get(h);
+        // fuckywucky pseudocode
+        succ(p, h, m, n, a, b, c, p->h, 1, floor(p->xh), &z, x);
+        succ(p, h, m, n, a, b, c, p->h, -1, -ceil(p->xh), &z, x);
+        free(p->max);
+        free(p->min);
         free(p); // free pointers in p aswell?
     }
+    deleteNodeSet(h);
     if (z == -INFINITY) {
         return NAN;
     } 
@@ -460,7 +494,7 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     return z;
 }
 // h is acctually a set lol
-void succ(node_t* p, int h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
+void succ(node_t* p, NodeSet* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
     node_t* q = extend(p, m, n, a, b, c, k, ak, bk);
     if (q == NULL) {
         return;
@@ -471,8 +505,9 @@ void succ(node_t* p, int h, int m, int n, double** a, double* b, double* c, int 
         if (integer(q)) {
             bound(q, h, zp, x);
         } else if (branch(q, *zp)) {
-           // add q to h
-           return;
+            // add q to h
+            put(h, q);
+            return;
         }
     }
     free(q);
@@ -497,6 +532,15 @@ int branch(node_t* q, double z) {
         }
         q->h = h;
         q->xh = q->x[h];
+
+        free(q->b);
+        free(q->x);
+        free(q->c);
+
+        for(int i = 0; i < q->m + 1; ++i){
+            free(q->a[i]);
+        }
+        free(q->a);
         // TODO delete each a, b,cc, x, of q // or recycle in other way
         return 1;
     }

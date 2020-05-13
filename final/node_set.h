@@ -1,8 +1,8 @@
 #ifndef NODE_SET_H
 #define NODE_SET_H
-#include "bnb.h"
 typedef struct NodeSet NodeSet;
 typedef struct SetNode SetNode;
+#include "bnb.h"
 
 struct NodeSet {
     int size;
@@ -23,7 +23,7 @@ SetNode* initSetNode();
 
 void deleteNodeSet(NodeSet*);
 
-int put(NodeSet*,node_t*);
+int put(NodeSet*, node_t*);
 
 node_t* get(NodeSet*);
 

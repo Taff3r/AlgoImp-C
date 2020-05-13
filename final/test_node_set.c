@@ -15,12 +15,14 @@ int main() {
 
     // Test put node in set and check that size == 1 and set is non-empty
     node_t* n = malloc(sizeof(node_t));
+    n->z = 1;
     put(set, n);
     assert(isEmpty(set) == 0);
     assert(set->size == 1);
     
     // put another node and see if size == 2 and set is still non-empty
     node_t* n1 = malloc(sizeof(node_t));
+    n1->z = 2;
     put(set, n1);
     assert(set->size == 2);
     assert(isEmpty(set) == 0);
@@ -35,6 +37,13 @@ int main() {
     assert(set->size == 1);
     assert(isEmpty(set) == 0);
     free(r);
+
+    node_t* q = malloc(sizeof(node_t));
+    q->z = 1;
+    assert(put(set, n1) == 0);
+    assert(set->size == 1);
+    assert(isEmpty(set) == 0 );
+    free(q);
 
     // check emptying list
     node_t* p = get(set);
