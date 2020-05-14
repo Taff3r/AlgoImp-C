@@ -9,7 +9,6 @@
 int main() {
     int m, n;
     fscanf(stdin, "%d%d", &m, &n);
-    printf("%.*e", EPSILON);
     // Allocate
     double*  c = calloc(n, sizeof(double));
     double** a = malloc(m * sizeof(double*));
@@ -211,7 +210,6 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
     int i,j,k;
     double w;
     k = init(s, m, n, a, b, c, x, y, var);
-    printConstraints(s);
     if (b[k] >= 0) {
         return 1;
     }
@@ -313,18 +311,18 @@ void prepare(simplex_t* s, int k) {
 
 node_t* initial_node(int m, int n, double** a, double* b, double* c) {
     node_t* p = malloc(sizeof(node_t));
-
+    printf("(init) n = %d\n", n);
     int i;
-    p->a = malloc((m+1) * sizeof(double*));
+    p->a = malloc(( m + 1) * sizeof(double*));
     for(i = 0; i < m + 1; ++i) {
-        p->a[i] = calloc(n+1, sizeof(double));
+        p->a[i] = calloc((n + 1) , sizeof(double));
     }
 
     p->b = calloc(m + 1, sizeof(double));
     p->c = calloc(n + 1, sizeof(double));
     p->x = calloc(m + n + 1, sizeof(double));
-    p->min = calloc(n, sizeof(double));
-    p->max = calloc(n, sizeof(double));
+    p->min = malloc(n * sizeof(double));
+    p->max = malloc(n * sizeof(double));
 
     // Double check
     // memcpy(p->a, a, sizeof(double*));
@@ -335,7 +333,6 @@ node_t* initial_node(int m, int n, double** a, double* b, double* c) {
     // NOTE NOT IN PSEUDOCODE
     p->m = m; 
     p->n = n; 
-
     for(i = 0; i < n; ++i) {
         p->min[i] = -INFINITY;
         p->max[i] = INFINITY;
@@ -348,8 +345,13 @@ node_t* initial_node(int m, int n, double** a, double* b, double* c) {
 node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k, double ak, double bk) {
     node_t* q = malloc(sizeof(node_t));
     q->k = k;
+    printf("k = %d\n", k);
     q->ak = ak;
     q->bk = bk;
+    // NOTE NOT IN PSEUDO CODE
+    // q->h = p->h;
+    printf("extend n = %d", n);
+    printf("p->m = %d\n", p->m);
     if (ak > 0 && p->max[k] < INFINITY) {
         q->m = p->m;
     } else if(ak < 0 && p->min[k] > 0) {
@@ -365,7 +367,7 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
 
     int i;
     for(i = 0; i < q->m + 1; ++i) {
-        q->a[i] = calloc(q->n + 1, sizeof(double));
+        q->a[i] = malloc((q->n + 1) * sizeof(double));
     }
 
     q->b = calloc(q->m + 1, sizeof(double));
@@ -373,16 +375,45 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
     q->x = calloc(q->n + 1, sizeof(double));
     q->min = calloc(n + 1, sizeof(double));
     q->max = calloc(n + 1, sizeof(double));
+    /*
+       for(i = 0; i < q->n + 1; ++i){
+       printf("q->c[%d]   = %lf\n", i, q->c[i]);
+       printf("q->min[%d] = %lf\n,", i, q->min[i]);
+       printf("c[%d]      = %lf\n,", i, c[i]);
+       printf("p->min[%d] = %lf\n,", i, p->min[i]);
+       }
+       */
 
     // double check
-    *q->min = *p->min;
-    *q->max = *p->max;
+    printf("p->n = %d,  n = %d\n", p->n, n);
+    for (i = 0; i < p->n + 1; ++i)
+        printf("p->min[%d] = %lf\n", i, p->min[i]);
+    
+    memcpy(q->min, p->min, (p->n + 1) * sizeof(double));
+    memcpy(q->max, p->max, (p->n + 1) * sizeof(double));
+    
+    for(i = 0; i < p->n + 1; ++i)
+        printf("q->min[%d] = %lf\n", i, q->min[i]);
+    /**q->min = *p->min;
+     *q->max = *p->max;
+     */
+
+    // Copy rows or cols?
     for (i = 0; i < m; ++i) {
         *q->a[i] = *a[i];
-        q->b[i] = b[i];
+        q->b[i]  = b[i];
     }
     *q->c = *c;
 
+    printf("AFTER COPY!!!!!\n");
+    /*
+       for(i = 0; i < q->n + 1; ++i){
+       printf("q->c[%d]   = %lf\n", i, q->c[i]);
+       printf("q->min[%d] = %lf\n,", i, q->min[i]);
+       printf("c[%d]      = %lf\n,", i, c[i]);
+       printf("p->min[%d] = %lf\n,", i, p->min[i]);
+       }
+       */
     if(ak > 0) {
         if (q->max[k] == INFINITY || bk < q->max[k]) {
             q->max[k] = bk;
@@ -390,8 +421,16 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
     } else if (q->min[k] == -INFINITY || -bk > q->min[k] ) {
         q->min[k] = -bk;
     }
+
+    printf("Before big loop\n");
     int j;
+
+    printf("q->m = %d, m = %d, n = %d\n", q->m, m, n);
+    // This seems weird.
     for (i = m, j = 0; j < n; ++j){
+        printf("j = %d, i = %d\n", j, i);
+        printf("q->min[j] = %lf\n", q->min[j]);
+        printf("q->max[j] = %lf\n", q->max[j]);
         if(q->min[j] > -INFINITY) {
             q->a[i][j] = -1;
             q->b[i]    = -q->min[j];
@@ -403,13 +442,13 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
             ++i;
         }
     }
-
+    printf("After big loop!\n");
     return q;
 }
 
 int is_integer(double* xp) {
     double x = *xp;
-    double r = round(x);
+    double r = lround(x);
     if (fabs(r - x) < EPSILON) {
         *xp = r;
         return 1;
@@ -434,9 +473,12 @@ void bound(node_t* p, NodeSet* h, double* zp, double* x) {
         // double check copy each element of p->x to x // save best x
         *x = *p->x;
         // remove and delete all nodes in q in h with q->z < p->z
-        while(!isEmpty(h)){
+        //
+        //
+        // TODO Double check that this works
+        for(int i = 0; i < h->size; ++i){
             node_t* q = get(h);
-            if(q->z < p->z ){
+            if(q->z < p->z){
                 // ADDED MORE FREES HERE
                 free(q->min);
                 free(q->max);
@@ -461,10 +503,10 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     put(h,p);
     double z = -INFINITY;
     p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0); // q->x???
-
     if (integer(p) || !isfinite(p->z)) {
         z = p->z;
         if(integer(p)){
+            // TODO Maybe use memcpy
             *x = *p->x;
         }
         free(p->max);
@@ -473,17 +515,17 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         deleteNodeSet(h);
         return z;
     }
-
+    printf("Before branch!\n");
     branch(p, z);
     while(!isEmpty(h)) {
         printf("In isEmpty loop\n");
-        // take p from h TODO
+        // take p from h 
         p = get(h);
         // fuckywucky pseudocode
         succ(p, h, m, n, a, b, c, p->h, 1, floor(p->xh), &z, x);
         succ(p, h, m, n, a, b, c, p->h, -1, -ceil(p->xh), &z, x);
-        free(p->max);
-        free(p->min);
+        //free(p->max);
+        //free(p->min);
         free(p); // free pointers in p aswell?
     }
     deleteNodeSet(h);
@@ -510,40 +552,43 @@ void succ(node_t* p, NodeSet* h, int m, int n, double** a, double* b, double* c,
             return;
         }
     }
+    // might need frees
     free(q);
 }
 
 int branch(node_t* q, double z) {
+    printf("In branch!\n");
     if (q->z  < z) {
         return 0;
     }
     double min, max; 
-    for (int h = 0; h < q->h; ++h) {
-        if(!is_integer(&q->x[h])){
+    for (int h = 0; h < q->n; ++h) {
+        if(!is_integer(&(q->x[h]))){
             if (q->min[h] == -INFINITY) {
                 min = 0;
             } else {
                 min = q->min[h];
             }
             max = q->max[h];
-        }
-        if (floor(q->x[h]) < min || ceil(q->x[h]) > max) {
-            continue;
-        }
-        q->h = h;
-        q->xh = q->x[h];
+            if (floor(q->x[h]) < min || ceil(q->x[h]) > max) {
+                continue;
+            }
+            q->h = h;
+            q->xh = q->x[h];
 
-        free(q->b);
-        free(q->x);
-        free(q->c);
+            // TODO delete each a, b,cc, x, of q // or recycle in other way
+            /*
+               free(q->b);
+               free(q->x);
+               free(q->c);
 
-        for(int i = 0; i < q->m + 1; ++i){
-            free(q->a[i]);
+               for(int i = 0; i < q->m; ++i){
+               free(q->a[i]);
+               }
+               free(q->a);
+               */
+            return 1;
         }
-        free(q->a);
-        // TODO delete each a, b,cc, x, of q // or recycle in other way
-        return 1;
     }
-
     return 0;
 }
