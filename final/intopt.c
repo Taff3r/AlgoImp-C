@@ -311,24 +311,35 @@ void prepare(simplex_t* s, int k) {
 
 node_t* initial_node(int m, int n, double** a, double* b, double* c) {
     node_t* p = malloc(sizeof(node_t));
-    printf("(init) n = %d\n", n);
-    int i;
-    p->a = malloc(( m + 1) * sizeof(double*));
-    for(i = 0; i < m + 1; ++i) {
-        p->a[i] = calloc((n + 1) , sizeof(double));
-    }
 
+    int i;
+    p->a = malloc((m + 1) * sizeof(double*));
     p->b = calloc(m + 1, sizeof(double));
     p->c = calloc(n + 1, sizeof(double));
     p->x = calloc(m + n + 1, sizeof(double));
-    p->min = malloc(n * sizeof(double));
-    p->max = malloc(n * sizeof(double));
+    p->min = calloc(n , sizeof(double));
+    p->max = calloc(n , sizeof(double));
+
+    for(i = 0; i < m + 1; ++i) {
+        p->a[i] = calloc((n + 1) , sizeof(double));
+
+
+    }
+
+
 
     // Double check
-    // memcpy(p->a, a, sizeof(double*));
-    p->a = a;
-    p->b = b;
-    p->c = c;
+    //memcpy(p->a, a, sizeof(double*));
+
+    // NEW
+    for(i = 0; i < m; ++i){
+        memcpy(p->a[i], a[i], (n + 1) * sizeof(double));
+    }
+    memcpy(p->b, b, n * sizeof(double));
+    memcpy(p->c, c, n * sizeof(double));
+    //p->a = a;
+    //p->b = b;
+    //p->c = c;
 
     // NOTE NOT IN PSEUDOCODE
     p->m = m; 
@@ -350,8 +361,7 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
     q->bk = bk;
     // NOTE NOT IN PSEUDO CODE
     // q->h = p->h;
-    printf("extend n = %d", n);
-    printf("p->m = %d\n", p->m);
+    
     if (ak > 0 && p->max[k] < INFINITY) {
         q->m = p->m;
     } else if(ak < 0 && p->min[k] > 0) {
@@ -364,73 +374,38 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
     q->h = -1;
 
     q->a = malloc((q->m + 1) * sizeof(double*));
+    q->b = calloc(q->m + 1, sizeof(double));
+    q->c = calloc(q->n + 1, sizeof(double));
+    q->x = calloc(q->m + q->n + 1, sizeof(double));
+    q->min = calloc(n + 1, sizeof(double));
+    q->max = calloc(n + 1, sizeof(double));
 
     int i;
     for(i = 0; i < q->m + 1; ++i) {
-        q->a[i] = malloc((q->n + 1) * sizeof(double));
+        q->a[i] = calloc((q->n + 1), sizeof(double));
     }
-
-    q->b = calloc(q->m + 1, sizeof(double));
-    q->c = calloc(q->n + 1, sizeof(double));
-    q->x = calloc(q->n + 1, sizeof(double));
-    q->min = calloc(n + 1, sizeof(double));
-    q->max = calloc(n + 1, sizeof(double));
-    /*
-       for(i = 0; i < q->n + 1; ++i){
-       printf("q->c[%d]   = %lf\n", i, q->c[i]);
-       printf("q->min[%d] = %lf\n,", i, q->min[i]);
-       printf("c[%d]      = %lf\n,", i, c[i]);
-       printf("p->min[%d] = %lf\n,", i, p->min[i]);
-       }
-       */
 
     // double check
-    printf("p->n = %d,  n = %d\n", p->n, n);
-    for (i = 0; i < p->n + 1; ++i)
-        printf("p->min[%d] = %lf\n", i, p->min[i]);
-    
-    memcpy(q->min, p->min, (p->n + 1) * sizeof(double));
-    memcpy(q->max, p->max, (p->n + 1) * sizeof(double));
-    
-    for(i = 0; i < p->n + 1; ++i)
-        printf("q->min[%d] = %lf\n", i, q->min[i]);
-    /**q->min = *p->min;
-     *q->max = *p->max;
-     */
+    memcpy(q->min, p->min, (p->n) * sizeof(double));
+    memcpy(q->max, p->max, (p->n) * sizeof(double));
 
-    // Copy rows or cols?
+    // Copy m first forw of paramter a to q->a. Each element and not only pointers
     for (i = 0; i < m; ++i) {
-        *q->a[i] = *a[i];
-        q->b[i]  = b[i];
+        memcpy(q->a[i], a[i], (n + 1) * sizeof(double));
     }
-    *q->c = *c;
+    memcpy(q->b, b, m * sizeof(double));
+    memcpy(q->c, c, n * sizeof(double));
 
-    printf("AFTER COPY!!!!!\n");
-    /*
-       for(i = 0; i < q->n + 1; ++i){
-       printf("q->c[%d]   = %lf\n", i, q->c[i]);
-       printf("q->min[%d] = %lf\n,", i, q->min[i]);
-       printf("c[%d]      = %lf\n,", i, c[i]);
-       printf("p->min[%d] = %lf\n,", i, p->min[i]);
-       }
-       */
     if(ak > 0) {
         if (q->max[k] == INFINITY || bk < q->max[k]) {
             q->max[k] = bk;
         }
-    } else if (q->min[k] == -INFINITY || -bk > q->min[k] ) {
+    } else if (q->min[k] == -INFINITY || (-bk) > q->min[k]) {
         q->min[k] = -bk;
     }
 
-    printf("Before big loop\n");
     int j;
-
-    printf("q->m = %d, m = %d, n = %d\n", q->m, m, n);
-    // This seems weird.
     for (i = m, j = 0; j < n; ++j){
-        printf("j = %d, i = %d\n", j, i);
-        printf("q->min[j] = %lf\n", q->min[j]);
-        printf("q->max[j] = %lf\n", q->max[j]);
         if(q->min[j] > -INFINITY) {
             q->a[i][j] = -1;
             q->b[i]    = -q->min[j];
@@ -468,29 +443,31 @@ int integer(node_t* p) {
 }
 
 void bound(node_t* p, NodeSet* h, double* zp, double* x) {
+    printf("in bound!\n");
     if (p->z > *zp) {
         *zp = p->z;
         // double check copy each element of p->x to x // save best x
-        *x = *p->x;
+        memcpy(x, p->x, (p->n + 1) * sizeof(double)); // TODO Make sure this is the correct size
         // remove and delete all nodes in q in h with q->z < p->z
-        //
-        //
         // TODO Double check that this works
         for(int i = 0; i < h->size; ++i){
+            printf("bound i = %d\n", i);
             node_t* q = get(h);
             if(q->z < p->z){
-                // ADDED MORE FREES HERE
+                // TODO: ADD MORE FREES HERE / CHECK FREES OK
                 free(q->min);
                 free(q->max);
                 for(int i = 0; i < q->m + 1; ++i){
                     free(q->a[i]);
                 }
+                printf("deleting %d", i);
                 free(q->a);
                 free(q->b);
                 free(q->x);
                 free(q->c);
                 free(q);
             } else {
+                printf("Readding node!\n");
                 put(h, q);
             }
         }
@@ -500,14 +477,14 @@ void bound(node_t* p, NodeSet* h, double* zp, double* x) {
 double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     node_t* p = initial_node(m, n, a, b, c);
     NodeSet* h = initNodeSet();
+    printf("Adding node!\n");
     put(h,p);
     double z = -INFINITY;
     p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0); // q->x???
     if (integer(p) || !isfinite(p->z)) {
         z = p->z;
         if(integer(p)){
-            // TODO Maybe use memcpy
-            *x = *p->x;
+            memcpy(x, p->x, n * sizeof(double)); // TODO Get correct size
         }
         free(p->max);
         free(p->min);
@@ -524,30 +501,32 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         // fuckywucky pseudocode
         succ(p, h, m, n, a, b, c, p->h, 1, floor(p->xh), &z, x);
         succ(p, h, m, n, a, b, c, p->h, -1, -ceil(p->xh), &z, x);
-        //free(p->max);
-        //free(p->min);
+        free(p->max);
+        free(p->min);
         free(p); // free pointers in p aswell?
     }
+    printf("Left isEmpty loop\n");
     deleteNodeSet(h);
     if (z == -INFINITY) {
         return NAN;
     } 
-
     return z;
 }
 // h is acctually a set lol
 void succ(node_t* p, NodeSet* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
     node_t* q = extend(p, m, n, a, b, c, k, ak, bk);
     if (q == NULL) {
+        printf("q == NULL\n");
         return;
     }
-
+    printf("call to simplex\n");
     q->z = simplex(q->m, q->n, q->a, q->b, q->c, q->x, 0);
     if(isfinite(q->z)){
         if (integer(q)) {
             bound(q, h, zp, x);
         } else if (branch(q, *zp)) {
             // add q to h
+            printf("Adding node!\n");
             put(h, q);
             return;
         }
@@ -558,7 +537,8 @@ void succ(node_t* p, NodeSet* h, int m, int n, double** a, double* b, double* c,
 
 int branch(node_t* q, double z) {
     printf("In branch!\n");
-    if (q->z  < z) {
+    if (q->z < z) {
+        printf("q->z < z\n");
         return 0;
     }
     double min, max; 
@@ -578,15 +558,14 @@ int branch(node_t* q, double z) {
 
             // TODO delete each a, b,cc, x, of q // or recycle in other way
             /*
-               free(q->b);
-               free(q->x);
-               free(q->c);
-
-               for(int i = 0; i < q->m; ++i){
-               free(q->a[i]);
-               }
-               free(q->a);
-               */
+            free(q->b);
+            free(q->x);
+            free(q->c);
+            for(int i = 0; i < q->m; ++i){
+                free(q->a[i]);
+            }
+            free(q->a);
+            */
             return 1;
         }
     }

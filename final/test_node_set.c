@@ -12,47 +12,34 @@ int main() {
     set = initNodeSet();
     // Test if set starts empty
     assert(isEmpty(set) == 1);
-
-    // Test put node in set and check that size == 1 and set is non-empty
-    node_t* n = malloc(sizeof(node_t));
-    n->z = 1;
-    put(set, n);
-    assert(isEmpty(set) == 0);
-    assert(set->size == 1);
-    
-    // put another node and see if size == 2 and set is still non-empty
     node_t* n1 = malloc(sizeof(node_t));
-    n1->z = 2;
     put(set, n1);
+    assert(set->size == 1);
+    assert(isEmpty(set) == 0);
+
+    node_t* n2 = malloc(sizeof(node_t));
+    put(set, n2);
     assert(set->size == 2);
     assert(isEmpty(set) == 0);
 
-    // Test put duplicate node in set and check that size is still 2
-    put(set, n1);
-    assert(set->size == 2);
-    
-    // Test that getting returns the first added value (front of list) and that it got removed
     node_t* r = get(set);
-    assert(r == n);
+    assert(r == n1);
     assert(set->size == 1);
     assert(isEmpty(set) == 0);
     free(r);
+  
+    // add 10 nodes
+    for(int i = 1; i <= 10; i++){
+        node_t* x = malloc(sizeof(node_t));
+        put(set, x);
+        assert(set->size == 1 + i);
+    }
 
-    node_t* q = malloc(sizeof(node_t));
-    q->z = 1;
-    assert(put(set, n1) == 0);
-    assert(set->size == 1);
-    assert(isEmpty(set) == 0 );
-    free(q);
 
-    // check emptying list
-    node_t* p = get(set);
-    assert(p == n1);
-    assert(set->size == 0);
-    assert(isEmpty(set) == 1);
-    free(p);
-
-    // Check that set was deleted
+    // Empty the list and see then delete
+    while(isEmpty(set)){
+        free(get(set));
+    }
     deleteNodeSet(set);
     printf("Tests passed\n");
 }

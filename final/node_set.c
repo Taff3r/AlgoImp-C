@@ -1,5 +1,6 @@
 #include "node_set.h"
 #include <stdlib.h>
+#include <stdio.h>
 NodeSet* initNodeSet() {
     NodeSet* set = malloc(sizeof(NodeSet));
     set->size = 0;
@@ -13,6 +14,7 @@ int isEmpty(NodeSet* set) {
 }
 
 void deleteSetNode(SetNode* n) {
+    // TODO: Add free'ing of e's vars.
     free(n->e);
     free(n);
 }
@@ -31,22 +33,12 @@ int put(NodeSet* set, node_t* nt) {
         set->head = set->tail = s;
     } else {
         // List is non-empty
-        SetNode* tmp = set->head;
-        while(tmp != NULL) {
-            // Duplicate found
-            if(tmp->e == nt || tmp->e->z == nt->z){
-                // Delete s and return
-                free(s);
-                return 0;
-            }
-            // Move forward in list
-            tmp = tmp->next;
-        }
         set->tail->next = s;
         set->tail = set->tail->next;
     }
     s->e = nt;
     ++(set->size);
+    printf("Node added!\n");
     return 1;
 }
 
