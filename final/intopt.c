@@ -322,8 +322,6 @@ node_t* initial_node(int m, int n, double** a, double* b, double* c) {
 
     for(i = 0; i < m + 1; ++i) {
         p->a[i] = calloc((n + 1) , sizeof(double));
-
-
     }
 
 
@@ -489,6 +487,12 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         free(p->max);
         free(p->min);
         free(p->x);
+        free(p->b);
+        for(int i = 0; i < p->m + 1; ++i) {
+            free(p->a[i]);
+        }
+        free(p->a);
+        free(p->c);
         deleteNodeSet(h);
         return z;
     }
