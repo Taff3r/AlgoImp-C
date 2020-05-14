@@ -536,6 +536,15 @@ void succ(node_t* p, NodeSet* h, int m, int n, double** a, double* b, double* c,
         }
     }
     // might need frees
+    free(q->b);
+    free(q->c);
+    free(q->min);
+    free(q->max);
+    free(q->x);
+    for(int z = 0; z < q->m + 1; z++)
+        free(q->a[z]);
+    free(q->a);
+    //free(a) // TODO: Causes more errors for some reason
     free(q);
 }
 
@@ -561,15 +570,13 @@ int branch(node_t* q, double z) {
             q->xh = q->x[h];
 
             // TODO delete each a, b,cc, x, of q // or recycle in other way
-            /*
             free(q->b);
             free(q->x);
             free(q->c);
-            for(int i = 0; i < q->m; ++i){
+            for(int i = 0; i < q->m + 1; ++i){
                 free(q->a[i]);
             }
             free(q->a);
-            */
             return 1;
         }
     }
