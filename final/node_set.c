@@ -4,8 +4,8 @@
 NodeSet* initNodeSet() {
     NodeSet* set = malloc(sizeof(NodeSet));
     set->size = 0;
-    set->head = 0;
-    set->tail = 0;
+    set->head = NULL;
+    set->tail = NULL;
     return set;
 }
 
@@ -38,7 +38,6 @@ int put(NodeSet* set, node_t* nt) {
     }
     s->e = nt;
     ++(set->size);
-    printf("Node added!\n");
     return 1;
 }
 
@@ -55,6 +54,7 @@ void deleteNodeSet(NodeSet* set) {
     while (set->head != NULL) {
         SetNode* tmp = set->head->next;
         deleteSetNode(set->head);
+        --(set->size);
         set->head = tmp;
     }
     free(set);

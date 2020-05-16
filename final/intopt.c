@@ -31,7 +31,6 @@ int main() {
         fscanf(stdin, "%lf", &b[i]);
 
     // Solve    
-    //    int y = 0;
     double sol = intopt(m, n, a, b, c, x);
     printf("%lf", sol);
 
@@ -99,11 +98,11 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
 
         for (i = 0; i < m; i += 1) {
-            if (s->var[n + 1] < n){
+            if (s->var[n + i] < n){
                 x[s->var[n + i]] = s->b[i];
+                //x[s->var[n]] = s->b[i];
             }
         }
-
         free(s->var);
     } else {
         for (i = 0; i < n; ++i) {
@@ -157,10 +156,10 @@ int select_nonbasic(simplex_t* s) {
 
 void pivot(simplex_t* s, int row, int col) {
     // Why auto?
-    auto double** a = s->a;
-    auto double*  b = s->b;
-    auto double*  c = s->c;
-    auto int      m = s->m;
+    double** a = s->a;
+    double*  b = s->b;
+    double*  c = s->c;
+    int      m = s->m;
     int      n = s->n;
     int      i,j,t;
 
@@ -311,55 +310,48 @@ void prepare(simplex_t* s, int k) {
 
 node_t* initial_node(int m, int n, double** a, double* b, double* c) {
     node_t* p = malloc(sizeof(node_t));
-
-    int i;
+    p->m = m; 
+    p->n = n;
     p->a = malloc((m + 1) * sizeof(double*));
     p->b = calloc(m + 1, sizeof(double));
     p->c = calloc(n + 1, sizeof(double));
     p->x = calloc(m + n + 1, sizeof(double));
-    p->min = calloc(n , sizeof(double));
-    p->max = calloc(n , sizeof(double));
-
-    for(i = 0; i < m + 1; ++i) {
-        p->a[i] = calloc((n + 1) , sizeof(double));
+    p->min = calloc(n, sizeof(double));
+    p->max = calloc(n, sizeof(double));
+    
+    int i;
+    for(i = 0; i < p->m + 1; ++i) {
+        p->a[i] = calloc((p->n + 1) , sizeof(double));
     }
-
-
-
     // Double check
     //memcpy(p->a, a, sizeof(double*));
 
     // NEW
     for(i = 0; i < m; ++i){
-        memcpy(p->a[i], a[i], (n + 1) * sizeof(double));
+        memcpy(p->a[i], a[i], (p->n) * sizeof(double));
     }
-    memcpy(p->b, b, n * sizeof(double));
-    memcpy(p->c, c, n * sizeof(double));
+    memcpy(p->b, b, p->n * sizeof(double));
+    memcpy(p->c, c, p->n * sizeof(double));
     //p->a = a;
     //p->b = b;
     //p->c = c;
 
-    // NOTE NOT IN PSEUDOCODE
-    p->m = m; 
-    p->n = n; 
-    for(i = 0; i < n; ++i) {
+    for(i = 0; i < p->n; ++i) {
         p->min[i] = -INFINITY;
         p->max[i] = INFINITY;
     }
-
     return p;
 }
 
 
 node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k, double ak, double bk) {
     node_t* q = malloc(sizeof(node_t));
+    //node_t* q = initial_node(m,n,a,b,c);
     q->k = k;
-    printf("k = %d\n", k);
     q->ak = ak;
     q->bk = bk;
     // NOTE NOT IN PSEUDO CODE
-    // q->h = p->h;
-    
+    //q->h = p->h;
     if (ak > 0 && p->max[k] < INFINITY) {
         q->m = p->m;
     } else if(ak < 0 && p->min[k] > 0) {
@@ -374,7 +366,7 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
     q->a = malloc((q->m + 1) * sizeof(double*));
     q->b = calloc(q->m + 1, sizeof(double));
     q->c = calloc(q->n + 1, sizeof(double));
-    q->x = calloc(q->m + q->n + 1, sizeof(double));
+    q->x = calloc(q->n + 1, sizeof(double));
     q->min = calloc(n + 1, sizeof(double));
     q->max = calloc(n + 1, sizeof(double));
 
@@ -386,6 +378,8 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
     // double check
     memcpy(q->min, p->min, (p->n) * sizeof(double));
     memcpy(q->max, p->max, (p->n) * sizeof(double));
+    //q->min = p->min;
+    //q->max = p->max;
 
     // Copy m first forw of paramter a to q->a. Each element and not only pointers
     for (i = 0; i < m; ++i) {
@@ -398,7 +392,7 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
         if (q->max[k] == INFINITY || bk < q->max[k]) {
             q->max[k] = bk;
         }
-    } else if (q->min[k] == -INFINITY || (-bk) > q->min[k]) {
+    } else if (q->min[k] == -INFINITY || -bk > q->min[k]) {
         q->min[k] = -bk;
     }
 
@@ -415,7 +409,6 @@ node_t* extend(node_t* p, int m, int n, double** a, double* b, double* c, int k,
             ++i;
         }
     }
-    printf("After big loop!\n");
     return q;
 }
 
@@ -425,9 +418,9 @@ int is_integer(double* xp) {
     if (fabs(r - x) < EPSILON) {
         *xp = r;
         return 1;
+    } else {
+        return 0;
     }
-
-    return 0;
 }
 
 int integer(node_t* p) {
@@ -436,36 +429,30 @@ int integer(node_t* p) {
             return 0;
         }
     }
-
     return 1;
 }
 
 void bound(node_t* p, NodeSet* h, double* zp, double* x) {
-    printf("in bound!\n");
     if (p->z > *zp) {
         *zp = p->z;
         // double check copy each element of p->x to x // save best x
         memcpy(x, p->x, (p->n + 1) * sizeof(double)); // TODO Make sure this is the correct size
         // remove and delete all nodes in q in h with q->z < p->z
         // TODO Double check that this works
-        for(int i = 0; i < h->size; ++i){
-            printf("bound i = %d\n", i);
+        int sz = h->size;
+        for(int i = 0; i < sz; ++i){
             node_t* q = get(h);
-            if(q->z < p->z){
-                // TODO: ADD MORE FREES HERE / CHECK FREES OK
+            if(q->z < *zp){
                 free(q->min);
                 free(q->max);
-                for(int i = 0; i < q->m + 1; ++i){
+                for(int i = 0; i < q->m + 1; ++i)
                     free(q->a[i]);
-                }
-                printf("deleting %d", i);
                 free(q->a);
                 free(q->b);
                 free(q->x);
                 free(q->c);
                 free(q);
             } else {
-                printf("Readding node!\n");
                 put(h, q);
             }
         }
@@ -475,14 +462,16 @@ void bound(node_t* p, NodeSet* h, double* zp, double* x) {
 double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     node_t* p = initial_node(m, n, a, b, c);
     NodeSet* h = initNodeSet();
-    printf("Adding node!\n");
     put(h,p);
     double z = -INFINITY;
     p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0); // q->x???
     if (integer(p) || !isfinite(p->z)) {
         z = p->z;
+
+        // Why is this here if we are returning afterwards anyways? Just to print the sol.?
         if(integer(p)){
-            memcpy(x, p->x, n * sizeof(double)); // TODO Get correct size
+            x = p->x;
+            //memcpy(x, p->x, n * sizeof(double)); // TODO Get correct size
         }
         free(p->max);
         free(p->min);
@@ -496,10 +485,8 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         deleteNodeSet(h);
         return z;
     }
-    printf("Before branch!\n");
     branch(p, z);
     while(!isEmpty(h)) {
-        printf("In isEmpty loop\n");
         // take p from h 
         p = get(h);
         // fuckywucky pseudocode
@@ -509,7 +496,6 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         free(p->min);
         free(p); // free pointers in p aswell?
     }
-    printf("Left isEmpty loop\n");
     deleteNodeSet(h);
     if (z == -INFINITY) {
         return NAN;
@@ -520,17 +506,14 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
 void succ(node_t* p, NodeSet* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
     node_t* q = extend(p, m, n, a, b, c, k, ak, bk);
     if (q == NULL) {
-        printf("q == NULL\n");
         return;
     }
-    printf("call to simplex\n");
     q->z = simplex(q->m, q->n, q->a, q->b, q->c, q->x, 0);
     if(isfinite(q->z)){
         if (integer(q)) {
             bound(q, h, zp, x);
         } else if (branch(q, *zp)) {
             // add q to h
-            printf("Adding node!\n");
             put(h, q);
             return;
         }
@@ -544,14 +527,11 @@ void succ(node_t* p, NodeSet* h, int m, int n, double** a, double* b, double* c,
     for(int z = 0; z < q->m + 1; z++)
         free(q->a[z]);
     free(q->a);
-    //free(a) // TODO: Causes more errors for some reason
     free(q);
 }
 
 int branch(node_t* q, double z) {
-    printf("In branch!\n");
     if (q->z < z) {
-        printf("q->z < z\n");
         return 0;
     }
     double min, max; 
@@ -569,7 +549,7 @@ int branch(node_t* q, double z) {
             q->h = h;
             q->xh = q->x[h];
 
-            // TODO delete each a, b,cc, x, of q // or recycle in other way
+            // TODO delete each a, b, c, x, of q // or recycle in other way
             free(q->b);
             free(q->x);
             free(q->c);
