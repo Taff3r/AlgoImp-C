@@ -1,9 +1,10 @@
 #include "node_set.h"
 #include <stdlib.h>
 #include <stdio.h>
-NodeSet* initNodeSet() {
+NodeSet* initNodeSet(int maxNodes) {
     NodeSet* set = malloc(sizeof(NodeSet));
     set->size = 0;
+    set->maxNodes = maxNodes;
     set->head = NULL;
     set->tail = NULL;
     return set;
@@ -14,8 +15,6 @@ int isEmpty(NodeSet* set) {
 }
 
 void deleteSetNode(SetNode* n) {
-    // TODO: Add free'ing of e's vars.
-    free(n->e);
     free(n);
 }
 
@@ -25,26 +24,59 @@ SetNode* initSetNode() {
     r->next = NULL;
     return r;
 }
-
+int recPut(NodeSet* set, node_t* nt, SetNode* curr, SetNode* next) {
+    if (next->e->z <= nt->z ){
+        SetNode* i = initSetNode();
+        i->e = nt;
+        curr->next = i;
+        i->next = next;
+        ++(set->size);
+        return 1;
+    }
+    return recPut(set, nt, next, next->next);
+}
 int put(NodeSet* set, node_t* nt) {
-    SetNode* s = initSetNode();
+    // Fuck off were full
+    if(set->size >= set->maxNodes) {
+        return 0;
+    }
     // List is empty
     if (set->head == NULL) {
+        SetNode* s = initSetNode();
         set->head = set->tail = s;
+        s->e = nt;
+        ++(set->size);
     } else {
         // List is non-empty
-        set->tail->next = s;
-        set->tail = set->tail->next;
+        // Check if the heads element->z has lower value than the one were trying to insert.
+        // If it is we can insert it much faster.
+        if(set->head->e->z <= nt->z){
+            SetNode* s = initSetNode();
+            SetNode* tmp = set->head;
+            set->head = s;
+            s->e = nt;
+            s->next = tmp;
+            ++(set->size);
+        } else if(nt->z <= set->tail->e->z) { // Check if it should be inserted at the tail of the list, also faster
+            SetNode* s = initSetNode();
+            SetNode* tmp = set->tail;
+            set->tail = s;
+            tmp->next = s;
+            s->e = nt;
+            ++(set->size);
+        } else {
+            // Find the correct place to insert the node.
+            // List is atleast size of 2 before it gets here
+            return recPut(set, nt, set->head, set->head->next);
+        }
     }
-    s->e = nt;
-    ++(set->size);
     return 1;
 }
 
 node_t* get(NodeSet* set) {
     node_t* ret  = set->head->e;
     SetNode* tmp = set->head->next;
-    free(set->head);
+    deleteSetNode(set->head);
     set->head = tmp;
     --(set->size);
     return ret;

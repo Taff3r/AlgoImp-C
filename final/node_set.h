@@ -6,6 +6,7 @@ typedef struct SetNode SetNode;
 
 struct NodeSet {
     int size;
+    int maxNodes;
     SetNode* tail;
     SetNode* head;
 };
@@ -24,6 +25,8 @@ SetNode* initSetNode();
 void deleteNodeSet(NodeSet*);
 
 int put(NodeSet*, node_t*);
+
+int recPut(NodeSet*, node_t*, SetNode*, SetNode*);
 
 node_t* get(NodeSet*);
 

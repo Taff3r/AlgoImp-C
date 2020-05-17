@@ -455,7 +455,7 @@ void bound(node_t* p, NodeSet* h, double* zp, double* x) {
 
 double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     node_t* p = initial_node(m, n, a, b, c);
-    NodeSet* h = initNodeSet();
+    NodeSet* h = initNodeSet(100000);
     put(h,p);
     double z = -INFINITY;
     p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0); // q->x???
