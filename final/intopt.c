@@ -445,12 +445,6 @@ void bound(node_t* p, NodeSet* h, double* zp, double* x) {
             if(q->z < *zp){
                 free(q->min);
                 free(q->max);
-                for(int i = 0; i < q->m + 1; ++i)
-                    free(q->a[i]);
-                free(q->a);
-                free(q->b);
-                free(q->x);
-                free(q->c);
                 free(q);
             } else {
                 put(h, q);
