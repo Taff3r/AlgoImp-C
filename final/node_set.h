@@ -18,15 +18,13 @@ struct SetNode {
 
 void deleteSetNode(SetNode*);
 
-NodeSet* initNodeSet();
+NodeSet* initNodeSet(int maxNodes);
 
 SetNode* initSetNode();
 
 void deleteNodeSet(NodeSet*);
 
 int put(NodeSet*, node_t*);
-
-int recPut(NodeSet*, node_t*, SetNode*, SetNode*);
 
 node_t* get(NodeSet*);
 

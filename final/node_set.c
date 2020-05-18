@@ -24,17 +24,7 @@ SetNode* initSetNode() {
     r->next = NULL;
     return r;
 }
-int recPut(NodeSet* set, node_t* nt, SetNode* curr, SetNode* next) {
-    if (next->e->z <= nt->z ){
-        SetNode* i = initSetNode();
-        i->e = nt;
-        curr->next = i;
-        i->next = next;
-        ++(set->size);
-        return 1;
-    }
-    return recPut(set, nt, next, next->next);
-}
+
 int put(NodeSet* set, node_t* nt) {
     // Fuck off were full
     if(set->size >= set->maxNodes) {
@@ -67,7 +57,22 @@ int put(NodeSet* set, node_t* nt) {
         } else {
             // Find the correct place to insert the node.
             // List is atleast size of 2 before it gets here
-            return recPut(set, nt, set->head, set->head->next);
+            //
+                SetNode* curr = set->head;
+                SetNode* next = set->head->next; 
+                while(1){
+                    if (next->e->z <= nt->z ){
+                        SetNode* i = initSetNode();
+                        i->e = nt;
+                        curr->next = i;
+                        i->next = next;
+                        ++(set->size);
+                        return 1;
+                    } else {
+                        curr = next;
+                        next = next->next;
+                    }
+                }
         }
     }
     return 1;
