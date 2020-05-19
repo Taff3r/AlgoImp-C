@@ -24,10 +24,14 @@ SetNode* initSetNode();
 
 void deleteNodeSet(NodeSet*);
 
-int put(NodeSet*, node_t*);
+void put(NodeSet*, node_t*);
+
+void putBack(NodeSet*, node_t*);
 
 node_t* get(NodeSet*);
 
 int isEmpty(NodeSet*);
+
+void printOrder(NodeSet* s);
 
 #endif

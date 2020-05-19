@@ -25,10 +25,30 @@ SetNode* initSetNode() {
     return r;
 }
 
-int put(NodeSet* set, node_t* nt) {
+void printOrder(NodeSet* s) {
+    SetNode* n = s->head;
+    while(n != NULL) {
+        printf("%lf \n", n->e->z);
+        n = n->next;
+    }
+}
+
+void putBack(NodeSet* set, node_t* nt) {
+    if(set->size >= set->maxNodes) {
+        return;
+    }
+
+    SetNode* i = initSetNode();
+    i->e = nt;
+    set->tail->next = i;
+    set->tail = i;
+    ++(set->size);
+}
+
+void put(NodeSet* set, node_t* nt) {
     // Fuck off were full
     if(set->size >= set->maxNodes) {
-        return 0;
+        return;
     }
     // List is empty
     if (set->head == NULL) {
@@ -67,7 +87,7 @@ int put(NodeSet* set, node_t* nt) {
                         curr->next = i;
                         i->next = next;
                         ++(set->size);
-                        return 1;
+                        return;
                     } else {
                         curr = next;
                         next = next->next;
@@ -75,7 +95,6 @@ int put(NodeSet* set, node_t* nt) {
                 }
         }
     }
-    return 1;
 }
 
 node_t* get(NodeSet* set) {

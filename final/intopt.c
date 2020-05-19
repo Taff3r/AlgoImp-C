@@ -5,6 +5,7 @@
 #include "simplex.h"
 #include "node_set.h"
 #include "bnb.h"
+#define MAX_NODES 100000
 
 int main() {
     int m, n;
@@ -78,6 +79,9 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
     while((col = select_nonbasic(s)) >= 0){
         row = -1;
         for(i = 0; i < m; ++i) {
+
+            // This row is 3.74% of all cycles
+            // Should be optimized
             if (a[i][col] > EPSILON && (row < 0 || b[i] / a[i][col] < b[row] / a[row][col])){
                 row = i;
             }
@@ -97,7 +101,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
             }
         }
 
-        for (i = 0; i < m; i += 1) {
+        for (i = 0; i < m; ++i) {
             if (s->var[n + i] < n){
                 x[s->var[n + i]] = s->b[i];
                 //x[s->var[n]] = s->b[i];
@@ -156,9 +160,9 @@ int select_nonbasic(simplex_t* s) {
 
 void pivot(simplex_t* s, int row, int col) {
     // Why auto?
-    double** a = s->a;
-    double*  b = s->b;
-    double*  c = s->c;
+    auto double** a = s->a;
+    auto double*  b = s->b;
+    auto double*  c = s->c;
     int      m = s->m;
     int      n = s->n;
     int      i,j,t;
@@ -166,25 +170,35 @@ void pivot(simplex_t* s, int row, int col) {
     t = s->var[col];
     s->var[col] = s->var[n + row];
     s->var[n + row] = t;
-    s->y = s->y + c[col] * b[row] / a[row][col];
 
+    double arc = a[row][col];
+    double* aR = a[row];
+    double br  = b[row];
+    double cc  = c[col];
+
+    s->y = s->y + cc * br / arc;
     for (i = 0; i < n; ++i) {
         if (i != col) {
-            c[i] = c[i] - c[col] * a[row][i] / a[row][col];
+            // This is row stands for 2.01% should be optimized
+            // e.g. break out a[row][col] calculation
+            // and a[row]
+            c[i] = c[i] - cc * aR[i] / arc;
         }
     }
-    c[col] = - c[col] / a[row][col];
+    c[col] = - c[col] / arc;
     for(i = 0; i < m; ++i) {
         if(i != row){
-            b[i] = b[i] - a[i][col] * b[row] / a[row][col];
+            b[i] = b[i] - a[i][col] * br / arc;
         }
     }
 
     for(i = 0; i < m; ++i) {
         if (i != row) {
+            double* aI = a[i];
             for(j = 0; j < n; ++j) {
                 if(j != col){
-                    a[i][j] = a[i][j] - a[i][col] * a[row][j] / a[row][col];
+                    // This line is 72.8% (!!!) of all cycles (WTF)
+                    aI[j] = aI[j] - aI[col] * aR[j] / arc;
                 }
             }
         }
@@ -192,17 +206,18 @@ void pivot(simplex_t* s, int row, int col) {
 
     for(i = 0; i < m; ++i) {
         if(i != row) {
-            a[i][col] = -a[i][col] / a[row][col];
+            // 2.5%
+            a[i][col] = -a[i][col] / arc;
         }
     }
 
     for(i = 0; i < n; ++i) {
         if (i != col) {
-            a[row][i] = a[row][i] / a[row][col];
+            aR[i] = aR[i] / arc;
         }
     }
-    b[row] = b[row] / a[row][col];
-    a[row][col] = 1 / a[row][col];
+    b[row] = br / arc;
+    a[row][col] = 1 / arc;
 }
 
 int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var) {
@@ -230,7 +245,7 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
     }
 
     if (i >= n) {
-        for(j = k = 0; k < n; k += 1) {
+        for(j = k = 0; k < n; ++k) {
             if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])) {
                 j = k;
             }
@@ -263,7 +278,7 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
     for (k = 0; k < n; ++k) {
         for (j = 0; j < n; ++j) {
             if (k == s->var[j]) {
-                t[j] += s->c[k];
+                t[j] = t[j] + s->c[k];
                 goto next_k;
             }
         }
@@ -281,9 +296,12 @@ int initial(simplex_t* s, int m, int n, double** a, double* b, double* c, double
 next_k:;
     }
     // Why not just copy contents?
-    for(i = 0; i < n; ++i) {
-        s->c[i] = t[i];
-    }
+    /*
+       for(i = 0; i < n; ++i) {
+       s->c[i] = t[i];
+       }
+       */
+    memcpy(s->c, t, n * sizeof(double));
     free(t);
     free(s->x);
     return 1;
@@ -318,7 +336,7 @@ node_t* initial_node(int m, int n, double** a, double* b, double* c) {
     p->x = calloc(m + n + 1, sizeof(double));
     p->min = calloc(n, sizeof(double));
     p->max = calloc(n, sizeof(double));
-    
+
     int i;
     for(i = 0; i < p->m + 1; ++i) {
         p->a[i] = calloc((p->n + 1) , sizeof(double));
@@ -436,18 +454,28 @@ void bound(node_t* p, NodeSet* h, double* zp, double* x) {
     if (p->z > *zp) {
         *zp = p->z;
         // double check copy each element of p->x to x // save best x
-        memcpy(x, p->x, (p->n + 1) * sizeof(double)); // TODO Make sure this is the correct size
+        memcpy(x, p->x, (p->n + 1) * sizeof(double)); 
         // remove and delete all nodes in q in h with q->z < p->z
-        // TODO Double check that this works
         int sz = h->size;
+        int found = 0;
         for(int i = 0; i < sz; ++i){
+            // TODO: This could be optimized because z-values are sorted
             node_t* q = get(h);
+            if (found) {
+                free(q->min);
+                free(q->max);
+                free(q);
+                continue;
+            }
             if(q->z < *zp){
+                // Since it is sorted all other nodes can just be deleted from now on.
+                found = 1;
                 free(q->min);
                 free(q->max);
                 free(q);
             } else {
-                put(h, q);
+                // put it back again
+                putBack(h, q);
             }
         }
     }
@@ -455,7 +483,7 @@ void bound(node_t* p, NodeSet* h, double* zp, double* x) {
 
 double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     node_t* p = initial_node(m, n, a, b, c);
-    NodeSet* h = initNodeSet(100000);
+    NodeSet* h = initNodeSet(MAX_NODES);
     put(h,p);
     double z = -INFINITY;
     p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0); // q->x???
@@ -499,6 +527,7 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
 // h is acctually a set lol
 void succ(node_t* p, NodeSet* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
     node_t* q = extend(p, m, n, a, b, c, k, ak, bk);
+    // THIS NEVER HAPPENS
     if (q == NULL) {
         return;
     }
@@ -529,7 +558,8 @@ int branch(node_t* q, double z) {
         return 0;
     }
     double min, max; 
-    for (int h = 0; h < q->n; ++h) {
+    int i, h;
+    for (h = 0; h < q->n; ++h) {
         if(!is_integer(&(q->x[h]))){
             if (q->min[h] == -INFINITY) {
                 min = 0;
@@ -547,7 +577,7 @@ int branch(node_t* q, double z) {
             free(q->b);
             free(q->x);
             free(q->c);
-            for(int i = 0; i < q->m + 1; ++i){
+            for(i = 0; i < q->m + 1; ++i){
                 free(q->a[i]);
             }
             free(q->a);
